@@ -1,0 +1,261 @@
+# Function to find the factorial of a given number n >= 0
+fact <- function(n) {
+  f <- 1
+  while(n >= 1) {
+    f <- f * n
+    n <- n - 1
+  }
+  return(f)
+}
+
+# Returns the combination
+nCr <- function(n, r) {
+  return(fact(n)/(fact(n - r) * fact(r)))
+}
+
+# Returns the permutation
+nPr <- function(n, r) {
+  return(fact(n)/fact(n - r))
+}
+
+## Function that does ordinary linear fit to the given dataset X and Y
+OrdLinearFit <- function(x, y) {
+  x_bar <- mean(x)
+
+  y_bar <- mean(y)
+  x_diff <- x - x_bar
+  y_diff <- y - y_bar
+  x_sq_diff <- x_diff^2
+
+  # M is the slope, I is the intercept
+  m <- sum(x_diff * y_diff)/sum(x_sq_diff)
+  i <- y_bar - m * x_bar
+  return(c(m, i))
+}
+
+# Wrapper around the function `OrdLinearfit` that takes input from the STDIN for the X and Y data
+stdinOrdLinearFit <- function() {
+  n <- readline("Enter the number of elements:")
+  print(paste("Enter ", n, " elements for X:"))
+  X <- c()
+  Y <- c()
+  i <- 0
+  while(i < n) {
+    num <- as.numeric(readline())
+    X <- append(X, num)
+    i <- i + 1
+  }
+  i <- 0
+  print(paste("Enter ", n, " elements for Y:"))
+  while(i < n) {
+    num <- as.numeric(readline())
+    Y <- append(Y, num)
+    i <- i + 1
+  }
+  C <- OrdLinearFit(X, Y)
+  plot(X, Y)
+  points(X, C[1] * X + C[2], type<-"l")
+}
+
+# Function for finding the binomial probability distribution function given the `p`, `n` and `r
+binomDist <- function(p, n, r) {
+  q <- 1 - p
+  return(nCr(n, r) * p^r * p^(n-r))
+}
+
+# Poisson probability distribution function for given `r` and `l` P(X=r)
+poissonDist <- function(r, l) {
+  return(exp(-l) * l^r/fact(r))
+}
+
+# Returns the mean of the array `arr`
+mean <- function(arr) {
+  s <- 0
+  for(i in arr) {
+    s = s + i
+  }
+  return(s/length(arr))
+}
+
+# Returns the median of the array `arr`
+median <- function(arr) {
+  arr <- sort(arr)
+  n <- length(arr)
+  if (n %% 2 == 0) l <- n/2
+  else l <- (n + 1)/2
+  return(arr[l])
+}
+
+# Calculates the mode of given set of numbers
+mode <- function(arr) {
+  M <- unique(arr)
+  for(i in arr) {
+    count <- 0
+    for(j in M) {
+      if (i == j) {
+        count <- count + 1
+      }
+    }
+    M[i] = count
+  }
+  maxM <- max(M)
+  maxMi <- match(maxM, M)
+  return(arr[maxMi])
+}
+
+# Standard deviation of given set of elements
+standardDeviation <- function(arr) {
+  m <- dMean(arr)
+  SD <- 0
+  for(i in arr) {
+    SD = SD + (arr[i] - m)^2
+  }
+  SD <- sqrt(SD/length(arr))
+  return(SD)
+}
+
+# Variance of given set of elements
+variance <- function(arr) {
+  SD <- dStandardDeviation(arr)
+  return(SD^2)
+}
+
+# Don't make me add the paste for print. Define a custom function that replaces the standard print command
+dprint <- function(...) {
+  print(paste(...))
+}
+
+# Two sample test
+TwoSampleSignTest <- function(x, y, sigval=NULL)
+{
+    n_plus <- 0
+    n_minus <- 0
+
+    # If length of the two sample datasets are sample, then take their difference and compute the median and rest of the procedure
+    if(length(x) == length(y))
+    {
+        z <- x - y
+    }
+    else # If not, then combine the two datasets and then compute the median and rest of the procedure
+    {
+        z <- append(x, y)
+    }
+
+    m <- median(z)
+    z <- z[-match(m, z)]
+    m_plus_bool_list <- z > m
+
+    for (x in m_plus_bool_list) {
+        if(x == TRUE) {
+            n_plus <- n_plus + 1
+        } else {
+            n_minus <- n_minus + 1
+        }
+    }
+
+    n <- n_plus + n_minus
+    r <- min(n_plus, n_minus)
+
+    bn <- binomDist(0.5, n, r)
+    if (bn < sigval) {
+        dprint("Hypothesis is rejected")
+    } else {
+        dprint("Hypothesis is correct")
+    }
+}
+
+#x <- c(9, 7, 3, 16, 12, 12, 5, 6)
+#y <- c(5, 3, 4, 11, 7, 5, 5, 1)
+#TwoSampleSignTest(x, y, 0.10)
+
+# Function that computes the hypothesis testing of K samples using Kruskal-Wallis Test\
+# A <-
+#
+# A <- c(2.48, 3.25, 3.94, 3.45, 3.0, 4.0, 3.6, 3.87)
+# B <- c(2.84, 3.1, 3.5, 2.27, 3.88, 2.87, 3.27, 2.8)
+# C <- c(3.4, 3.17, 2.85, 2.46, 3.15, 2.69, 2.88, 3.44)
+# samples <- list(A, B, C)
+# KWTest(samples)
+
+KWTest <- function(samples)
+{
+    pool <- c()
+    for (i in samples) {
+        pool <- append(pool, i)
+    }
+    pool <- sort(pool)
+    rank_list <- c()
+    for (sample in samples) {
+        r <- 0
+        for (e in sample) {
+            r = r + match(e, pool)
+        }
+        rank_list <- append(rank_list, r)
+    }
+    n <- length(pool)
+    K = 12/(n * (n + 1))
+    h = 0
+    k <- length(rank_list)
+    for (i in (1:k)) {
+        ni <- length(samples[[i]])
+        h <- h + rank_list[i]^2/ni
+    }
+    H = h * 12/(n * (n + 1)) - 3 * (n + 1)
+    print(H)
+}
+
+#A <- c(2.48, 3.25, 3.94, 3.45, 3.0, 4.0, 3.6, 3.87)
+#B <- c(2.84, 3.1, 3.5, 2.27, 3.88, 2.87, 3.27, 2.8)
+#C <- c(3.4, 3.17, 2.85, 2.46, 3.15, 2.69, 2.88, 3.44)
+
+#samples <- list(A, B, C)
+#KWTest(samples)
+
+## install.packages("quantreg")
+
+png("quantreg.png")
+library(quantreg)
+
+data(mtcars)
+
+rqfit <- rq(mtcars$mpg ~ mtcars$wt)
+
+plot(mpg ~ wt, data = mtcars, pch = 16, main = "mpg ~ wt")
+multi_rqfit <- rq(mpg ~ wt, data = mtcars, tau = seq(0, 1, by = 0.5))
+
+colors = c("red", "purple", "green", "blue", "brown")
+df <- data.frame(hours=c(1, 1, 2, 2, 2, 3, 4, 4, 4, 5, 5, 5, 6, 6, 7, 8),
+                 score=c(48, 78, 72, 70, 66, 92, 93, 75, 75, 80, 95, 97, 90, 96, 99, 99))
+
+for (j in 1:ncol(multi_rqfit$coefficients)) {
+  abline(coef(multi_rqfit)[, j], col = colors[j])
+}
+
+dev.off()
+
+table <- read.table("SDSS_quasar.dat", header=TRUE)
+
+png("scatter_SDSS.png")
+plot((table$u_mag - table$g_mag), (table$g_mag - table$r_mag), pch=5, col='blue', xlab="u - g", ylab="g - r", main="(u - g) vs (g - r) color-color plot")
+dev.off()
+
+## # Weighter least square test
+
+
+# Load the mtcars dataset
+
+
+## png("quant.png")
+## data(mtcars)
+
+## # Let's say we want to perform weighted least squares regression on mpg vs. wt (miles per gallon vs. weight)
+## # For demonstration purposes, let's create some sample weights (you can replace this with your own weights)
+## weights <- rep(1, nrow(mtcars))  # Equal weights for all observations
+
+## # Perform weighted least squares regression
+## wls_fit <- lm(mpg ~ wt, data = mtcars, weights = weights)
+
+## # Plot the data and the regression line
+## plot(mtcars$wt, mtcars$mpg, main = "Weighted Least Squares Regression", xlab = "Weight", ylab = "Miles per gallon")
+## abline(wls_fit, col = "magenta")
+## dev.off()
